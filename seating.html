@@ -3,77 +3,843 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seating Arrangement</title>
+    <title>3D Exam Hall Seating Visualizer (Pixar Style)</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        h1 {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif; /* More rounded font */
+            background-color: #a0d8ef; /* Soft sky blue background */
             color: #333;
         }
-        .seating-chart {
-            margin: 30px 0;
-            border: 1px solid #ddd;
-            padding: 20px;
-            background-color: #f9f9f9;
+        #container { width: 100vw; height: 100vh; display: block; }
+        canvas { display: block; }
+        .label {
+            color: #333; /* Darker text for better contrast on light elements */
+            font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+            padding: 3px 6px;
+            background: rgba(255, 255, 255, 0.85); /* Slightly more opaque */
+            border: 1px solid #bbb;
+            border-radius: 5px; /* More rounded */
+            font-size: 13px; /* Slightly larger */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px; /* Allow slightly wider labels */
+            pointer-events: none;
+            user-select: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Subtle shadow */
         }
-        table {
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 8px; /* More rounded */
+            font-size: 15px;
+            border: 1px solid #ccc;
+             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        /* Style lil-gui for Pixar theme */
+        :root {
+             --background-color: #ffffff;
+             --text-color: #333333;
+             --title-background-color: #e0f0ff; /* Light blue title bg */
+             --widget-color: #f0f8ff; /* Very light blue widget bg */
+             --hover-color: #d0e8ff;
+             --focus-color: #b0d8ff;
+             --number-color: #1e90ff; /* Dodger blue */
+             --string-color: #ff6347; /* Tomato red */
+        }
+        .lil-gui { --font-size: 14px; --width: 300px; max-height: 90vh; overflow-y: auto; } /* Increased max-height and added scrolling */
+        .lil-gui.root { box-shadow: 0 3px 12px rgba(0,0,0,0.15); border: 1px solid #ddd; border-radius: 6px; }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            position: relative;
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .close-button {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .close-button:hover {
+            color: #333;
+        }
+        
+        .seating-table {
             width: 100%;
             border-collapse: collapse;
+            margin: 15px 0;
         }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
+        
+        .seating-table th, .seating-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #ddd;
         }
-        th {
-            background-color: #eee;
+        
+        .seating-table th {
+            background-color: #e0f0ff;
+            font-weight: bold;
         }
-        a {
-            color: #0066cc;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 20px;
+        
+        .seating-table tr:nth-child(even) {
+            background-color: #f9f9f9;
         }
-        a:hover {
-            text-decoration: underline;
+        
+        .copy-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
         }
+        
+        .copy-button:hover {
+            background-color: #45a049;
+        }
+
     </style>
 </head>
 <body>
-    <h1>Seating Arrangement</h1>
-    <p>Below is the current seating chart for the event.</p>
+    <div id="info">Click on a seat or the invigilator to view/edit details.</div>
+    <div id="container"></div>
     
-    <div class="seating-chart">
-        <table>
-            <tr>
-                <th>Row 1</th>
-                <td>Seat A1</td>
-                <td>Seat B1</td>
-                <td>Seat C1</td>
-                <td>Seat D1</td>
-            </tr>
-            <tr>
-                <th>Row 2</th>
-                <td>Seat A2</td>
-                <td>Seat B2</td>
-                <td>Seat C2</td>
-                <td>Seat D2</td>
-            </tr>
-            <tr>
-                <th>Row 3</th>
-                <td>Seat A3</td>
-                <td>Seat B3</td>
-                <td>Seat C3</td>
-                <td>Seat D3</td>
-            </tr>
-        </table>
+    <!-- Seating Details Modal -->
+    <div id="seatingModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Exam Hall Seating Details</h2>
+            <div id="seatingTableContainer">
+                <table class="seating-table">
+                    <thead>
+                        <tr>
+                            <th>Seat Number</th>
+                            <th>Student Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="seatingTableBody">
+                        <!-- Seat data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <button id="copyTableBtn" class="copy-button">Copy to Clipboard</button>
+        </div>
     </div>
-    
-    <a href="index.html">Back to Home</a>
+
+    <!-- Import Map for Three.js modules from CDN -->
+    <!-- Make sure these paths are correct for your setup -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "/js/three/three.module.js",
+                "three/addons/": "/js/three/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- Main Application Logic -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        import { CapsuleGeometry } from 'three/addons/geometries/CapsuleGeometry.js'; // Import CapsuleGeometry
+
+        let scene, camera, renderer, labelRenderer, controls;
+        let floor, ambientLight, dirLight, hemiLight; // Added hemiLight
+        let seats = []; // Array to hold seat group objects
+        let invigilator = null; // Reference to the invigilator object
+        let selectedObject = null; // Can be a seat group or the invigilator mesh
+        let gui, seatConfigFolder, nameController, seatNumberController;
+        let invigilatorFolder, invigilatorNameController; // GUI for invigilator
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        // --- Configuration ---
+        const params = {
+            numSeats: 25,
+            seatColor: 0x5b9dcc, // Vibrant but soft blue
+            deskColor: 0xb88a6a, // Warm wood tone
+            invigilatorColor: 0xe07a7a, // Soft red
+            selectedColor: 0xffd700, // Bright yellow/gold for selection
+            floorColor: 0xe8dcb5, // Warm light grey/beige floor
+            userIconColor: 0x90ee90, // Lime green user icon
+            rowSpacing: 3.5, // Slightly more spacing
+            colSpacing: 2.8 // Slightly more spacing
+        };
+
+        const seatDimensions = {
+            baseW: 0.6, baseH: 0.1, baseD: 0.6,
+            backW: 0.6, backH: 0.6, backD: 0.08,
+            deskW: 0.7, deskH: 0.05, deskD: 0.5,
+            deskSupportH: 0.7
+        };
+
+        const userIconDimensions = {
+            radius: 0.1,
+            height: 0.03
+        };
+
+        // --- Initialization ---
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xa0d8ef); // Soft sky blue
+            scene.fog = new THREE.Fog(0xa0d8ef, 30, 70); // Matching fog, adjust distances
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100); // Slightly narrower FOV
+            camera.position.set(0, 12, 18); // Adjusted camera position
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping; // Filmic tone mapping
+            renderer.toneMappingExposure = 1.0; // Adjust exposure if needed
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Label Renderer (no changes needed here for theme)
+            labelRenderer = new CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0px';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            document.getElementById('container').appendChild(labelRenderer.domElement);
+
+            // Controls (adjust damping for smoother feel)
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.08; // Slightly slower damping
+            controls.screenSpacePanning = false;
+            controls.minDistance = 3;
+            controls.maxDistance = 50;
+            controls.maxPolarAngle = Math.PI / 2 - 0.05;
+
+            // Lighting (Pixar Style)
+            hemiLight = new THREE.HemisphereLight(0xffffff, 0xaaaaaa, 1.2); // Soft sky/ground light
+            scene.add(hemiLight);
+
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Reduced ambient
+            scene.add(ambientLight);
+
+            dirLight = new THREE.DirectionalLight(0xffffff, 1.5); // Slightly less intense directional
+            dirLight.position.set(10, 20, 15); // Adjusted position
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 60; // Increased far plane
+            dirLight.shadow.camera.left = -30; // Adjusted shadow bounds
+            dirLight.shadow.camera.right = 30;
+            dirLight.shadow.camera.top = 30;
+            dirLight.shadow.camera.bottom = -30;
+            dirLight.shadow.bias = -0.0005; // Adjust shadow bias if needed
+            scene.add(dirLight);
+            // const helper = new THREE.CameraHelper( dirLight.shadow.camera );
+            // scene.add( helper );
+
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(120, 120); // Slightly larger floor
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: params.floorColor,
+                roughness: 0.8, // Keep floor relatively rough
+                metalness: 0.1
+            });
+            floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -0.01;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // GUI
+            setupGUI();
+
+            // Initial seat arrangement
+            arrangeSeats(params.numSeats);
+
+            // Create Invigilator
+            createInvigilator();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('click', onPointerClick);
+
+            // Start Animation Loop
+            animate();
+        }
+
+        // --- Seat Creation (Minor changes for color cloning) ---
+        function createSeat(seatIndex, position) {
+            const group = new THREE.Group();
+            group.position.copy(position);
+
+             // Use base params colors directly, clone when applying
+            const seatMaterial = new THREE.MeshStandardMaterial({
+                color: params.seatColor,
+                roughness: 0.6, // Slightly less rough
+                metalness: 0.1
+            });
+            const deskMaterial = new THREE.MeshStandardMaterial({
+                color: params.deskColor,
+                roughness: 0.7, // Slightly less rough
+                metalness: 0.1
+            });
+
+            // Seat Base
+            const baseGeo = new THREE.BoxGeometry(seatDimensions.baseW, seatDimensions.baseH, seatDimensions.baseD);
+            const baseMesh = new THREE.Mesh(baseGeo, seatMaterial); // Apply directly
+            baseMesh.position.y = seatDimensions.baseH / 2 + 0.3;
+            baseMesh.castShadow = true;
+            baseMesh.receiveShadow = true;
+            group.add(baseMesh);
+            baseMesh.userData.part = 'seat';
+
+            // Seat Back
+            const backGeo = new THREE.BoxGeometry(seatDimensions.backW, seatDimensions.backH, seatDimensions.backD);
+            const backMesh = new THREE.Mesh(backGeo, seatMaterial); // Apply directly
+            backMesh.position.y = baseMesh.position.y + seatDimensions.baseH / 2 + seatDimensions.backH / 2 - 0.05;
+            backMesh.position.z = -seatDimensions.baseD / 2 + seatDimensions.backD / 2;
+            backMesh.castShadow = true;
+            backMesh.receiveShadow = true;
+            group.add(backMesh);
+            backMesh.userData.part = 'seat';
+
+            // Desk Surface
+            const deskGeo = new THREE.BoxGeometry(seatDimensions.deskW, seatDimensions.deskH, seatDimensions.deskD);
+            const deskMesh = new THREE.Mesh(deskGeo, deskMaterial); // Apply directly
+            deskMesh.position.y = seatDimensions.deskSupportH + seatDimensions.deskH / 2;
+            deskMesh.position.z = seatDimensions.baseD / 2 + seatDimensions.deskD / 2 + 0.1;
+            deskMesh.castShadow = true;
+            deskMesh.receiveShadow = true;
+            group.add(deskMesh);
+            deskMesh.userData.part = 'desk';
+
+            // Desk Supports
+            const supportGeo = new THREE.BoxGeometry(0.05, seatDimensions.deskSupportH, 0.05);
+            const supportL = new THREE.Mesh(supportGeo, deskMaterial); // Apply directly
+            supportL.position.set(-seatDimensions.deskW / 2 + 0.05, seatDimensions.deskSupportH / 2, deskMesh.position.z - seatDimensions.deskD / 2 + 0.05);
+            supportL.castShadow = true;
+            group.add(supportL);
+            supportL.userData.part = 'desk';
+
+            const supportR = new THREE.Mesh(supportGeo, deskMaterial); // Create new mesh for right support
+            supportR.position.x = seatDimensions.deskW / 2 - 0.05;
+            supportR.position.y = supportL.position.y; // Match Y
+            supportR.position.z = supportL.position.z; // Match Z
+            supportR.castShadow = true;
+            group.add(supportR);
+            supportR.userData.part = 'desk';
+
+            // --- Label ---
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'label';
+            const seatLabel = new CSS2DObject(labelDiv);
+            seatLabel.position.set(0, backMesh.position.y + seatDimensions.backH / 2 + 0.25, backMesh.position.z); // Slightly higher label
+            group.add(seatLabel);
+
+            // Store data within the group object
+            group.userData = {
+                isSeatGroup: true, // Identify as a seat group
+                id: seatIndex,
+                seatNumber: `Seat ${seatIndex + 1}`,
+                name: '',
+                // Store original colors per part type
+                originalSeatColor: new THREE.Color(params.seatColor), // Store original param color
+                originalDeskColor: new THREE.Color(params.deskColor), // Store original param color
+                labelElement: labelDiv,
+                labelObject: seatLabel,
+                userIconMesh: null,
+                backMeshRef: backMesh
+            };
+            updateSeatLabel(group);
+            updateUserIcon(group);
+
+            scene.add(group);
+            seats.push(group);
+
+            return group;
+        }
+
+        // --- Invigilator Creation ---
+        function createInvigilator() {
+            const invigilatorHeight = 1.7;
+            const invigilatorRadius = 0.3;
+            const geometry = new CapsuleGeometry(invigilatorRadius, invigilatorHeight - 2 * invigilatorRadius, 6, 16); // Smoother capsule
+            const material = new THREE.MeshStandardMaterial({
+                color: params.invigilatorColor,
+                roughness: 0.5,
+                metalness: 0.1
+            });
+            invigilator = new THREE.Mesh(geometry, material);
+
+            // Position at the front center (adjust Z based on seat arrangement)
+            const frontZ = -(params.numSeats > 0 ? Math.ceil(Math.sqrt(params.numSeats)) : 1) * params.rowSpacing / 2 - params.rowSpacing * 1.5; // Place in front of first row
+            invigilator.position.set(0, invigilatorHeight / 2, frontZ);
+            invigilator.castShadow = true;
+            invigilator.receiveShadow = true; // Optional: Can receive shadows
+
+            // --- Label ---
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'label';
+            const invigilatorLabel = new CSS2DObject(labelDiv);
+             // Position label above the capsule
+            invigilatorLabel.position.set(0, invigilatorHeight + 0.3, 0);
+            invigilator.add(invigilatorLabel); // Add label as child of invigilator mesh
+
+            // Store data
+            invigilator.userData = {
+                isInvigilator: true, // Identify as invigilator
+                name: 'Invigilator', // Default name
+                originalColor: new THREE.Color(params.invigilatorColor), // Store original color
+                labelElement: labelDiv,
+                labelObject: invigilatorLabel
+            };
+            updateInvigilatorLabel(); // Set initial text
+
+            scene.add(invigilator);
+        }
+
+        // --- Update Invigilator Label Text ---
+        function updateInvigilatorLabel() {
+            if (!invigilator) return;
+            const data = invigilator.userData;
+            data.labelElement.textContent = data.name.trim() !== '' ? data.name : 'Invigilator';
+        }
+
+
+        // --- Update Seat Label Text ---
+        function updateSeatLabel(seatGroup) {
+            const data = seatGroup.userData;
+            let labelText = data.seatNumber;
+            if (data.name && data.name.trim() !== '') { // Show name only if not empty
+                labelText += ` (${data.name})`;
+            }
+            data.labelElement.textContent = labelText;
+            // Adjust label max width if needed, maybe based on text length
+            // data.labelElement.style.maxWidth = data.name ? '150px' : '100px';
+        }
+
+        // --- Update User Icon ---
+        function updateUserIcon(seatGroup) {
+            const data = seatGroup.userData;
+            const nameExists = data.name && data.name.trim() !== '';
+
+            if (nameExists && !data.userIconMesh) {
+                // Add icon
+                const iconGeo = new THREE.CylinderGeometry(userIconDimensions.radius, userIconDimensions.radius, userIconDimensions.height, 16);
+                 // Use updated color from params
+                const iconMat = new THREE.MeshStandardMaterial({ color: params.userIconColor, roughness: 0.5, metalness: 0.1 });
+                data.userIconMesh = new THREE.Mesh(iconGeo, iconMat);
+
+                // Position above the center of the seat back
+                const backMesh = data.backMeshRef;
+                if (backMesh) {
+                     data.userIconMesh.position.set(
+                        0, // Centered horizontally on the seat group origin
+                        backMesh.position.y + seatDimensions.backH / 2 + userIconDimensions.height / 2 + 0.05, // Above back mesh
+                        backMesh.position.z // Same depth as back mesh
+                    );
+                    data.userIconMesh.rotation.x = Math.PI / 2; // Lay flat like a coin/marker
+                    data.userIconMesh.castShadow = true;
+                    seatGroup.add(data.userIconMesh);
+                } else {
+                    console.warn("Back mesh reference not found for icon placement", seatGroup.userData.id);
+                }
+
+
+            } else if (!nameExists && data.userIconMesh) {
+                // Remove icon
+                seatGroup.remove(data.userIconMesh);
+                // Optional: Dispose geometry/material if creating many dynamically
+                // data.userIconMesh.geometry.dispose();
+                // data.userIconMesh.material.dispose();
+                data.userIconMesh = null;
+            }
+        }
+
+
+        // --- Seat Arrangement ---
+        function arrangeSeats(numSeats) {
+            // Clear existing seats
+             if (selectedObject && selectedObject.userData.isSeatGroup) {
+                 deselectObject(); // Deselect if a seat was selected
+             }
+             updateSeatConfigGUI(null); // Clear seat GUI
+
+            seats.forEach(seat => {
+                // Remove icon first if it exists
+                if (seat.userData.userIconMesh) {
+                    seat.remove(seat.userData.userIconMesh);
+                    // Consider disposing geometry/material here if needed
+                }
+                // Remove label object from its parent (the seat group)
+                if (seat.userData.labelObject) {
+                    seat.remove(seat.userData.labelObject);
+                }
+                scene.remove(seat);
+                // TODO: Add proper disposal of geometries and materials if memory becomes an issue
+            });
+            seats = [];
+
+            if (numSeats <= 0) return;
+
+            const cols = Math.ceil(Math.sqrt(numSeats));
+            const rows = Math.ceil(numSeats / cols);
+            const totalWidth = (cols - 1) * params.colSpacing;
+            const totalDepth = (rows - 1) * params.rowSpacing;
+            const startX = -totalWidth / 2;
+            const startZ = -totalDepth / 2;
+
+            let seatIndex = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (seatIndex >= numSeats) break;
+                    const x = startX + c * params.colSpacing;
+                    const z = startZ + r * params.rowSpacing;
+                    createSeat(seatIndex, new THREE.Vector3(x, 0, z));
+                    seatIndex++;
+                }
+                if (seatIndex >= numSeats) break;
+            }
+
+            // Reposition invigilator if seats change
+            if (invigilator) {
+                 const frontZ = startZ - params.rowSpacing * 1.5; // Place in front of first row
+                 invigilator.position.z = frontZ;
+            }
+        }
+
+        // --- GUI Setup ---
+        function setupGUI() {
+            gui = new GUI();
+            gui.title("Seating Config");
+
+            gui.add(params, 'numSeats', 1, 200, 1).name('Number of Seats').onChange(arrangeSeats);
+            
+            // Seat Config Folder (initially hidden)
+            seatConfigFolder = gui.addFolder('Selected Seat Config');
+            seatConfigFolder.close();
+            seatConfigFolder.hide();
+            seatNumberController = null;
+            nameController = null;
+
+            // Invigilator Config Folder (initially hidden)
+            invigilatorFolder = gui.addFolder('Invigilator Config');
+            invigilatorFolder.close();
+            invigilatorFolder.hide();
+            invigilatorNameController = null;
+            
+            // Add Copy Seating button at the bottom of GUI
+            const copyButtonController = {
+                copySeating: function() {
+                    showSeatingModal();
+                }
+            };
+            const copyButton = gui.add(copyButtonController, 'copySeating').name('Copy Seating');
+            
+            // Style the copy button to be green and centered with reduced width and padding
+            const copyButtonElement = copyButton.domElement.querySelector('.name');
+            if (copyButtonElement) {
+                copyButtonElement.style.background = '#4CAF50';
+                copyButtonElement.style.color = 'white';
+                copyButtonElement.style.textAlign = 'center';
+                copyButtonElement.style.borderRadius = '4px';
+                copyButtonElement.style.padding = '8px 10px'; // More padding
+                copyButtonElement.style.margin = '15px auto 15px auto'; // Increased bottom margin
+                copyButtonElement.style.display = 'block';
+                copyButtonElement.style.width = '150px'; // Slightly wider
+                copyButtonElement.style.fontSize = '14px'; // Explicit font size
+                copyButtonElement.parentElement.style.border = 'none'; // Remove border
+                copyButtonElement.parentElement.style.background = 'transparent'; // Make container transparent
+                copyButtonElement.parentElement.style.marginBottom = '20px'; // Add bottom margin to container
+            }
+        }
+
+        // --- Update Seat Config GUI ---
+        function updateSeatConfigGUI(seatGroup) {
+             if (!seatConfigFolder) return;
+
+             // Clean up previous seat controllers
+             if (seatNumberController) seatNumberController.destroy();
+             if (nameController) nameController.destroy();
+             seatNumberController = null;
+             nameController = null;
+
+             if (seatGroup && seatGroup.userData.isSeatGroup) { // Ensure it's a seat
+                 seatConfigFolder.show();
+                 seatConfigFolder.title(`Seat: ${seatGroup.userData.seatNumber}`);
+
+                 seatNumberController = seatConfigFolder.add(seatGroup.userData, 'seatNumber')
+                     .name('Seat ID/No.')
+                     .disable();
+
+                 nameController = seatConfigFolder.add(seatGroup.userData, 'name')
+                     .name('Name')
+                     .onChange(() => {
+                         // Ensure we are updating the currently selected seat
+                         if (selectedObject === seatGroup) {
+                             updateSeatLabel(seatGroup);
+                             updateUserIcon(seatGroup);
+                         }
+                     });
+                 seatConfigFolder.open();
+             } else {
+                 seatConfigFolder.hide();
+                 seatConfigFolder.title('Selected Seat Config');
+             }
+        }
+
+        // --- Update Invigilator Config GUI ---
+        function updateInvigilatorConfigGUI(invigilatorMesh) {
+            if (!invigilatorFolder) return;
+
+            // Clean up previous invigilator controller
+            if (invigilatorNameController) invigilatorNameController.destroy();
+            invigilatorNameController = null;
+
+            if (invigilatorMesh && invigilatorMesh.userData.isInvigilator) { // Ensure it's the invigilator
+                invigilatorFolder.show();
+                invigilatorFolder.title('Invigilator Details');
+
+                invigilatorNameController = invigilatorFolder.add(invigilatorMesh.userData, 'name')
+                    .name('Name')
+                    .onChange(() => {
+                         // Ensure we are updating the currently selected invigilator
+                         if (selectedObject === invigilatorMesh) {
+                             updateInvigilatorLabel();
+                         }
+                    });
+                invigilatorFolder.open();
+            } else {
+                invigilatorFolder.hide();
+                 invigilatorFolder.title('Invigilator Config');
+            }
+        }
+
+
+        // --- Interaction ---
+         function onPointerClick(event) {
+            // Prevent raycasting if the click originated on the GUI
+            if (event.target !== renderer.domElement) {
+                 let targetElement = event.target;
+                 while (targetElement) {
+                     if (targetElement.classList && targetElement.classList.contains('lil-gui')) {
+                         return; // Click was inside GUI, do nothing here
+                     }
+                     targetElement = targetElement.parentElement;
+                 }
+            }
+
+            pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+             // Check against seats and invigilator
+            const objectsToCheck = [...seats]; // Start with seat groups
+             if (invigilator) {
+                 objectsToCheck.push(invigilator); // Add invigilator mesh
+             }
+            const intersects = raycaster.intersectObjects(objectsToCheck, true); // recursive check
+
+            let clickedObject = null;
+            if (intersects.length > 0) {
+                let intersectedObject = intersects[0].object;
+                 // Traverse up to find the main selectable object (seat group or invigilator mesh)
+                while (intersectedObject && !(intersectedObject.userData.isSeatGroup || intersectedObject.userData.isInvigilator)) {
+                     intersectedObject = intersectedObject.parent;
+                }
+                 if (intersectedObject && (intersectedObject.userData.isSeatGroup || intersectedObject.userData.isInvigilator)) {
+                    clickedObject = intersectedObject;
+                 }
+            }
+
+            if (clickedObject) {
+                // Only select if it's a *different* object
+                if (selectedObject !== clickedObject) {
+                    selectObject(clickedObject);
+                }
+            } else {
+                 // Clicked on empty space or floor, deselect
+                 if (selectedObject) {
+                     deselectObject();
+                 }
+            }
+        }
+
+        function selectObject(object) {
+            // Deselect previous object first
+            if (selectedObject !== object) {
+                deselectObject(); // Call the general deselect function
+            }
+
+            // Select new object
+            selectedObject = object;
+
+             // Apply highlighting
+            if (selectedObject.userData.isSeatGroup) {
+                selectedObject.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                         // Only change if not already selected color (safety check)
+                        if (!child.material.color.equals(new THREE.Color(params.selectedColor))) {
+                             child.material.color.set(params.selectedColor);
+                         }
+                    }
+                });
+                 updateSeatConfigGUI(selectedObject); // Show seat GUI
+                 updateInvigilatorConfigGUI(null); // Hide invigilator GUI
+            } else if (selectedObject.userData.isInvigilator) {
+                if (selectedObject.material) { // Check if invigilator mesh has material
+                    selectedObject.material.color.set(params.selectedColor);
+                 }
+                 updateInvigilatorConfigGUI(selectedObject); // Show invigilator GUI
+                 updateSeatConfigGUI(null); // Hide seat GUI
+            }
+        }
+
+        function deselectObject() {
+            if (!selectedObject) return;
+
+            if (selectedObject.userData.isSeatGroup) {
+                // Restore original colors for the seat group
+                selectedObject.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        // Check if the current color is the selected color before reverting
+                         if (child.material.color.equals(new THREE.Color(params.selectedColor))) {
+                            if (child.userData.part === 'seat') {
+                                child.material.color.copy(selectedObject.userData.originalSeatColor);
+                            } else if (child.userData.part === 'desk') {
+                                child.material.color.copy(selectedObject.userData.originalDeskColor);
+                            }
+                         }
+                    }
+                });
+                updateSeatConfigGUI(null); // Hide seat GUI
+            } else if (selectedObject.userData.isInvigilator) {
+                 // Restore original color for the invigilator
+                 if (selectedObject.material && selectedObject.material.color.equals(new THREE.Color(params.selectedColor))) {
+                     selectedObject.material.color.copy(selectedObject.userData.originalColor);
+                 }
+                 updateInvigilatorConfigGUI(null); // Hide invigilator GUI
+            }
+
+            selectedObject = null; // Clear selection
+        }
+
+
+        // --- Window Resize ---
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        // --- Seating Details Modal Functions ---
+        function showSeatingModal() {
+            const modal = document.getElementById('seatingModal');
+            const tableBody = document.getElementById('seatingTableBody');
+            
+            // Clear existing table content
+            tableBody.innerHTML = '';
+            
+            // Populate table with seat data
+            seats.forEach(seat => {
+                const row = document.createElement('tr');
+                const seatNumberCell = document.createElement('td');
+                const nameCell = document.createElement('td');
+                
+                seatNumberCell.textContent = seat.userData.seatNumber;
+                nameCell.textContent = seat.userData.name || '-';
+                
+                row.appendChild(seatNumberCell);
+                row.appendChild(nameCell);
+                tableBody.appendChild(row);
+            });
+            
+            // Show the modal
+            modal.style.display = 'block';
+        }
+        
+        // Close modal when clicking the X button
+        document.querySelector('.close-button').addEventListener('click', function() {
+            document.getElementById('seatingModal').style.display = 'none';
+        });
+        
+        // Close modal when clicking outside the modal content
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('seatingModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Copy button handler
+        document.getElementById('copyTableBtn').addEventListener('click', function() {
+            const tableRows = document.querySelectorAll('#seatingTableBody tr');
+            let textToCopy = '';
+            
+            tableRows.forEach(row => {
+                const seatNumber = row.cells[0].textContent;
+                const name = row.cells[1].textContent;
+                textToCopy += `${seatNumber}: ${name}\n`;
+            });
+            
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                    alert('Seating details copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy to clipboard. Please try again.');
+                });
+        });
+        
+        // --- Start ---
+        init();
+
+    </script>
 </body>
 </html>
